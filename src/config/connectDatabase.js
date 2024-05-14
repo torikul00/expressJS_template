@@ -1,18 +1,33 @@
 const mongodb = require("mongodb");
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@practice.6vpv5du.mongodb.net/?retryWrites=true&w=majority`
-const mongoClient = mongodb.MongoClient
-async function connectDatabase() {
+const uri = `${process.env.MONGO_URI}`;
+const mongoClient = mongodb.MongoClient;
 
-    try {
-        const client = await mongoClient.connect(uri)
-        return client.db("practice");
+let dbPromise = null;
+
+function connectDatabase() {
+    if (!dbPromise) {
+        console.log('Connected to db');
+        dbPromise = new Promise(async (resolve, reject) => {
+            try {
+                const client = await mongoClient.connect(uri);
+                const db = client.db("logify");
+                resolve(db);
+            } catch (error) {
+                reject(error);
+            }
+        });
     }
-    catch (error) {
-        
-        console.log(error)
+    return dbPromise;
+}
+
+async function getDB() {
+    try {
+        const db = await connectDatabase();
+        return db;
+    } catch (error) {
+        throw new Error("Error getting database connection: " + error.message);
     }
 }
-connectDatabase()
+module.exports = getDB
 
-module.exports = connectDatabase
